@@ -96,7 +96,7 @@ export default {
   transition: 0.14s ease;
   transition-property: transform, opacity;
   border-radius: @radius-border;
-  background-color: var(--color-content-background);
+  background-color: var(--color-main-background);
   box-shadow: 0 1px 8px 0 rgba(0, 0, 0, 0.2);
   z-index: 10;
   overflow: hidden;

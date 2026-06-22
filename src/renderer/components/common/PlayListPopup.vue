@@ -13,11 +13,12 @@
       </svg>
     </button>
     <template #content>
-      <div :class="$style.listBox">
+      <div :class="$style.listBox" ref="listBoxRef">
         <div
           v-for="(item, index) in playListMusics"
           :key="item.id"
           :class="[$style.item, { [$style.playing]: currentIndex === index }]"
+          :ref="el => setItemRef(el, index)"
           @click="handlePlay(index)"
         >
           <span :class="$style.playIcon" v-if="currentIndex === index">
@@ -41,7 +42,7 @@
 </template>
 
 <script>
-import { computed, ref } from '@common/utils/vueTools'
+import { computed, ref, watch, nextTick } from '@common/utils/vueTools'
 import { playInfo } from '@renderer/store/player/state'
 import { allMusicList } from '@renderer/store/list/state'
 import { playList } from '@renderer/core/player/action'
@@ -56,10 +57,39 @@ export default {
 
     const currentIndex = computed(() => playInfo.playerPlayIndex)
     const textRefs = ref([])
+    const itemRefs = ref([])
+    const listBoxRef = ref(null)
+    let prevIndex = -1
 
     const setTextRef = (el, index) => {
       if (el) textRefs.value[index] = el
     }
+
+    const setItemRef = (el, index) => {
+      if (el) itemRefs.value[index] = el
+    }
+
+    // 自动定位到正在播放的音乐
+    watch(currentIndex, (newIndex) => {
+      if (newIndex === prevIndex || newIndex < 0) return
+      prevIndex = newIndex
+      nextTick(() => {
+        const itemEl = itemRefs.value[newIndex]
+        const listBox = listBoxRef.value
+        if (!itemEl || !listBox) return
+        const itemTop = itemEl.offsetTop
+        const itemHeight = itemEl.offsetHeight
+        const listHeight = listBox.clientHeight
+        const currentScroll = listBox.scrollTop
+        // 如果当前项不在可见区域内，则滚动到该项居中
+        if (itemTop < currentScroll || itemTop + itemHeight > currentScroll + listHeight) {
+          listBox.scrollTo({
+            top: itemTop - listHeight / 2 + itemHeight / 2,
+            behavior: 'smooth',
+          })
+        }
+      })
+    })
 
     const handleMouseEnter = (e, index) => {
       const el = textRefs.value[index]
@@ -95,6 +125,8 @@ export default {
       currentIndex,
       textRefs,
       setTextRef,
+      setItemRef,
+      listBoxRef,
       handleMouseEnter,
       handleMouseLeave,
     }
